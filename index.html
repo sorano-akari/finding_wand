@@ -11,15 +11,16 @@
         #ui { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; }
         .top-bar { background: rgba(255,255,255,0.9); padding: 12px; border-bottom: 4px solid var(--dora-blue); text-align: center; color: #333; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
         .bottom-controls { margin-top: auto; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; pointer-events: none; padding-bottom: 30px; }
-        .speed-btns, #find-btn, #stick-btn, #cheat-btn { pointer-events: auto; }
+        .speed-btns, #find-btn, #stick-btn, #cheat-btn, #reset-btn { pointer-events: auto; }
         .speed-btns { display: flex; gap: 8px; background: rgba(255,255,255,0.1); padding: 5px; border-radius: 30px; }
         .speed-btns button { padding: 8px 16px; border: none; background: transparent; border-radius: 20px; font-size: 12px; color: #aaa; cursor: pointer; }
         .speed-btns button.active { background: var(--dora-blue); color: white; font-weight: bold; }
         #find-btn { width: 90%; max-width: 320px; padding: 15px; font-size: 20px; font-weight: bold; border-radius: 30px; background: #333; color: #555; border: 2px solid #444; transition: 0.3s; }
         #find-btn.lit { background: var(--dora-red); color: white; border: 2px solid white; cursor: pointer; box-shadow: 0 0 20px var(--dora-red); animation: glow 0.6s infinite alternate; }
         #stick-btn { width: 75px; height: 75px; border-radius: 50%; background: var(--dora-red); border: 4px solid white; color: white; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+        #reset-btn { width: 90%; max-width: 320px; padding: 15px; font-size: 20px; font-weight: bold; border-radius: 30px; background: gold; color: black; border: 2px solid white; cursor: pointer; display: none; }
         @keyframes glow { from { opacity: 0.8; } to { opacity: 1; transform: scale(1.02); } }
-        #cheat-btn { position: absolute; top: 70px; right: 10px; pointer-events: auto; font-size: 10px; color: #888; background: rgba(255,255,255,0.1); border: 1px solid #444; padding: 3px 6px; cursor: pointer; }
+        #cheat-btn { position: absolute; top: 70px; right: 10px; font-size: 10px; color: #888; background: rgba(255,255,255,0.1); border: 1px solid #444; padding: 3px 6px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -34,32 +35,37 @@
             <button id="sp-100" onclick="setSpeed(100)">🚀 100</button>
         </div>
         <button id="find-btn" onclick="attemptClear()">未発見</button>
+        <button id="reset-btn" onclick="resetGame()">🌟 もう一度探す 🌟</button>
         <button id="stick-btn" onclick="useStick()">🪄<span id="battery" style="font-size:11px">🔋 5/5</span></button>
         <div style="color: #888; font-size: 10px;">地図をタップして移動 / 再タップで停止</div>
     </div>
 </div>
-
 <script data-goatcounter="https://sorano-akari-academy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const WORLD_SIZE = 2000;
-    const VIEW_RADIUS = 20, VIEW_ANGLE = 30 * Math.PI / 180, SCAN_WIDTH = 10;
-    let player = { x: 1000, y: 1000, angle: -Math.PI/2, isMoving: false };
-    let target = { x: 0, y: 0, found: false }, battery = 5, currentSpeed = 20, isSlowMo = false, cheatMode = false, lastLog = null, scale = 1;
+    const WORLD_SIZE = 1000;
+    const VIEW_RADIUS = 50, VIEW_ANGLE = 30 * Math.PI / 180;
+    let player = { x: 0, y: 0, angle: 0, isMoving: false };
+    let target = { x: 0, y: 0, found: false }, battery = 5, currentSpeed = 20, isSlowMo = false, cheatMode = false, lastLog = null, scale = 1, piconTimer = 0, clearImage;
 
     function init() {
         resize();
-        const dist = 500 + Math.random() * 400, ang = Math.random() * Math.PI * 2;
-        target.x = player.x + Math.cos(ang) * dist; target.y = player.y + Math.sin(ang) * dist;
-        requestAnimationFrame(loop);
+        player.x = Math.random() * WORLD_SIZE;
+        player.y = Math.random() * WORLD_SIZE;
+        target.x = Math.random() * WORLD_SIZE;
+        target.y = Math.random() * WORLD_SIZE;
+        player.angle = Math.random() * Math.PI * 2;
+        piconTimer = 180;
+        clearImage = new Image();
+        clearImage.src = 'clear.png';
+        if(!window.loopStarted) { requestAnimationFrame(loop); window.loopStarted = true; }
     }
 
     function setSpeed(s) { if(isSlowMo) return; currentSpeed = s; document.querySelectorAll('.speed-btns button').forEach(b => b.classList.remove('active')); document.getElementById('sp-'+s).classList.add('active'); }
 
     function useStick() {
-        if(battery <= 0 || player.isMoving || isSlowMo) return;
+        if(battery <= 0 || player.isMoving || isSlowMo || target.found) return;
         const dx = target.x - player.x, dy = target.y - player.y, dist = Math.sqrt(dx*dx+dy*dy);
         const sigma = Math.asin(Math.min(1, 10/dist)) / 1.04;
         player.angle = Math.atan2(dy, dx) + (Math.sqrt(-2*Math.log(Math.random()||1))*Math.cos(2*Math.PI*Math.random())*sigma);
@@ -73,6 +79,8 @@
         if(player.isMoving && !target.found) {
             let s = isSlowMo ? 1.0 : currentSpeed;
             player.x += Math.cos(player.angle)*(s/60); player.y += Math.sin(player.angle)*(s/60);
+            player.x = Math.max(0, Math.min(WORLD_SIZE, player.x));
+            player.y = Math.max(0, Math.min(WORLD_SIZE, player.y));
             updateCollision();
         }
         draw(); requestAnimationFrame(loop);
@@ -81,68 +89,89 @@
     function updateCollision() {
         if(target.found) return;
         const dx = target.x - player.x, dy = target.y - player.y, dist = Math.sqrt(dx*dx+dy*dy);
-        let inSight = (dist <= 20 && Math.abs(normalizeAngle(Math.atan2(dy, dx)-player.angle)) <= VIEW_ANGLE);
+        const relAngle = normalizeAngle(Math.atan2(dy, dx) - player.angle);
+        let inSight = (dist <= VIEW_RADIUS && Math.abs(relAngle) <= VIEW_ANGLE);
         const btn = document.getElementById('find-btn');
-        if(inSight && !isSlowMo) { isSlowMo = true; btn.classList.add('lit'); btn.innerText = "発見！押してクリア"; vibrate([200, 100, 200]); }
-        else if(!inSight && isSlowMo) { isSlowMo = false; btn.classList.remove('lit'); btn.innerText = "未発見"; }
+        if(inSight) {
+            if(!isSlowMo) { isSlowMo = true; btn.classList.add('lit'); btn.innerText = "発見！押してクリア"; vibrate([200, 100, 200]); }
+        } else if(isSlowMo) { isSlowMo = false; btn.classList.remove('lit'); btn.innerText = "未発見"; }
     }
 
-    function attemptClear() { if(isSlowMo) { target.found = true; isSlowMo = false; player.isMoving = false; const btn = document.getElementById('find-btn'); btn.classList.remove('lit'); btn.style.background = "gold"; btn.innerText = "🌟 CLEAR 🌟"; vibrate([500,100,500]); } }
+    function attemptClear() {
+        if(isSlowMo) {
+            target.found = true; isSlowMo = false; player.isMoving = false;
+            document.getElementById('find-btn').style.display = "none";
+            document.getElementById('reset-btn').style.display = "block";
+            vibrate([500,100,500]);
+        }
+    }
+
+    function resetGame() {
+        target.found = false; battery = 5; lastLog = null; isSlowMo = false; player.isMoving = false;
+        document.getElementById('battery').innerText = `🔋 5/5`;
+        document.getElementById('stick-btn').disabled = false;
+        document.getElementById('find-btn').style.display = "block";
+        document.getElementById('find-btn').innerText = "未発見";
+        document.getElementById('find-btn').classList.remove('lit');
+        document.getElementById('reset-btn').style.display = "none";
+        init();
+    }
 
     function draw() {
         ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.save();
-        // 画面中央を原点にして全体をスケール
-        ctx.translate(canvas.width/2, canvas.height/2);
-        ctx.scale(scale, scale);
-        // マップ全体(2000x2000)が中央に来るようにずらす
-        ctx.translate(-WORLD_SIZE/2, -WORLD_SIZE/2);
-
-        // マップ外枠
-        ctx.strokeStyle = "#444"; ctx.lineWidth = 2/scale;
-        ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
-
-        // グリッド
+        ctx.translate(canvas.width/2, canvas.height/2); ctx.scale(scale, scale); ctx.translate(-WORLD_SIZE/2, -WORLD_SIZE/2);
+        
+        ctx.strokeStyle = "#444"; ctx.lineWidth = 2/scale; ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
         ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = 1/scale;
-        for(let i=0; i<=WORLD_SIZE; i+=100) {
-            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke();
-        }
-
+        for(let i=0; i<=WORLD_SIZE; i+=100) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke(); }
+        
         if(lastLog) {
             ctx.save(); ctx.translate(lastLog.x, lastLog.y); ctx.rotate(lastLog.angle);
-            ctx.fillStyle = "rgba(0,160,233,0.15)"; ctx.fillRect(0,-10,WORLD_SIZE*2,20); ctx.restore();
+            ctx.strokeStyle = "rgba(0,160,233,0.5)"; ctx.lineWidth = 1/scale;
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(WORLD_SIZE*2,0); ctx.stroke(); ctx.restore();
         }
 
         if(target.found || cheatMode) {
             ctx.fillStyle = target.found ? "gold" : "rgba(237,28,36,0.6)";
-            ctx.beginPath(); ctx.arc(target.x, target.y, 10/scale, 0, 7); ctx.fill();
+            ctx.beginPath(); ctx.arc(target.x, target.y, 4/scale, 0, 7); ctx.fill();
+        }
+
+        if (piconTimer > 0) {
+            const ring = (180 - piconTimer) % 60 / 60;
+            ctx.beginPath(); ctx.arc(player.x, player.y, (10 + ring * 60)/scale, 0, 7);
+            ctx.strokeStyle = `rgba(0,160,233,${1-ring})`; ctx.lineWidth = 2/scale; ctx.stroke();
+            piconTimer--;
         }
 
         ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(player.angle);
         ctx.fillStyle = isSlowMo ? "rgba(255,239,0,0.6)" : "rgba(255,255,255,0.2)";
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,20,-VIEW_ANGLE,VIEW_ANGLE); ctx.fill();
-        ctx.fillStyle = "#00A0E9"; ctx.beginPath(); ctx.arc(0,0,10/scale,0,7); ctx.fill(); ctx.strokeStyle="white"; ctx.lineWidth=2/scale; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,VIEW_RADIUS,-VIEW_ANGLE,VIEW_ANGLE); ctx.fill();
+        ctx.fillStyle = "#00A0E9"; ctx.beginPath(); ctx.arc(0,0,4/scale,0,7); ctx.fill(); ctx.strokeStyle="white"; ctx.lineWidth=2/scale; ctx.stroke();
         ctx.restore(); ctx.restore();
+
+        if (target.found) {
+            ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+            if (clearImage && clearImage.complete) {
+                const s = Math.min(canvas.width/clearImage.width, canvas.height/clearImage.height)*0.8;
+                const iw = clearImage.width*s, ih = clearImage.height*s;
+                ctx.drawImage(clearImage, (canvas.width-iw)/2, (canvas.height-ih)/2, iw, ih);
+            }
+            ctx.fillStyle = "gold"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center";
+            ctx.fillText("2回のステッキ使用でほぼ100％の確率で見つけられる方法があるよ！", canvas.width/2, canvas.height*0.8);
+            ctx.fillText("考えてみよう！", canvas.width/2, canvas.height*0.8 + 30);
+        }
     }
 
     function normalizeAngle(a) { while(a < -Math.PI) a += Math.PI*2; while(a > Math.PI) a -= Math.PI*2; return a; }
-    function resize() {
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        // マップ全体が収まるようにスケール調整
-        scale = Math.min(canvas.width, canvas.height) / (WORLD_SIZE * 1.1);
-    }
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; scale = Math.min(canvas.width, canvas.height) / (WORLD_SIZE * 1.1); }
     function vibrate(p) { if(navigator.vibrate) navigator.vibrate(p); }
-
     canvas.addEventListener('pointerdown', (e) => {
         if(target.found || isSlowMo) return;
         if(player.isMoving) player.isMoving = false;
         else {
             const r = canvas.getBoundingClientRect();
-            // 画面のタップ座標をマップ内の座標に変換
-            const tx = (e.clientX - r.left - r.width / 2) / scale + WORLD_SIZE / 2;
-            const ty = (e.clientY - r.top - r.height / 2) / scale + WORLD_SIZE / 2;
-            player.angle = Math.atan2(ty - player.y, tx - player.x);
+            player.angle = Math.atan2((e.clientY-r.top-r.height/2)/scale + WORLD_SIZE/2 - player.y, (e.clientX-r.left-r.width/2)/scale + WORLD_SIZE/2 - player.x);
             player.isMoving = true;
         }
     });
