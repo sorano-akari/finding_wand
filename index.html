@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>たずね人ステッキ・シミュレーター</title>
     <style>
-        :root { --dora-blue: #00A0E9; --dora-red: #ED1C24; --dora-yellow: #FFEF00; --bg-dark: #1a1a1a; }
+        :root { --dora-blue: #00A0E9; --dora-red: #ED1C24; --bg-dark: #1a1a1a; }
         body { margin: 0; overflow: hidden; background: var(--bg-dark); font-family: sans-serif; touch-action: none; user-select: none; color: white; }
         canvas { display: block; }
         #ui { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; }
@@ -18,7 +18,7 @@
         #find-btn { width: 90%; max-width: 320px; padding: 15px; font-size: 20px; font-weight: bold; border-radius: 30px; background: #333; color: #555; border: 2px solid #444; transition: 0.3s; }
         #find-btn.lit { background: var(--dora-red); color: white; border: 2px solid white; cursor: pointer; box-shadow: 0 0 20px var(--dora-red); animation: glow 0.6s infinite alternate; }
         #stick-btn { width: 75px; height: 75px; border-radius: 50%; background: var(--dora-red); border: 4px solid white; color: white; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-        #reset-btn { width: 90%; max-width: 320px; padding: 15px; font-size: 20px; font-weight: bold; border-radius: 30px; background: gold; color: black; border: 2px solid white; cursor: pointer; display: none; }
+        #reset-btn { width: 90%; max-width: 320px; padding: 15px; font-size: 20px; font-weight: bold; border-radius: 30px; background: gold; color: black; border: 2px solid white; cursor: pointer; display: none; z-index: 100; }
         @keyframes glow { from { opacity: 0.8; } to { opacity: 1; transform: scale(1.02); } }
         #cheat-btn { position: absolute; top: 70px; right: 10px; font-size: 10px; color: #888; background: rgba(255,255,255,0.1); border: 1px solid #444; padding: 3px 6px; cursor: pointer; }
     </style>
@@ -37,10 +37,8 @@
         <button id="find-btn" onclick="attemptClear()">未発見</button>
         <button id="reset-btn" onclick="resetGame()">🌟 もう一度探す 🌟</button>
         <button id="stick-btn" onclick="useStick()">🪄<span id="battery" style="font-size:11px">🔋 5/5</span></button>
-        <div style="color: #888; font-size: 10px;">地図をタップして移動 / 再タップで停止</div>
     </div>
 </div>
-<script data-goatcounter="https://sorano-akari-academy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -72,7 +70,6 @@
         lastLog = { x: player.x, y: player.y, angle: player.angle };
         battery--; document.getElementById('battery').innerText = `🔋 ${battery}/5`;
         if(battery===0) document.getElementById('stick-btn').disabled = true;
-        vibrate(50);
     }
 
     function loop() {
@@ -93,7 +90,7 @@
         let inSight = (dist <= VIEW_RADIUS && Math.abs(relAngle) <= VIEW_ANGLE);
         const btn = document.getElementById('find-btn');
         if(inSight) {
-            if(!isSlowMo) { isSlowMo = true; btn.classList.add('lit'); btn.innerText = "発見！押してクリア"; vibrate([200, 100, 200]); }
+            if(!isSlowMo) { isSlowMo = true; btn.classList.add('lit'); btn.innerText = "発見！押してクリア"; }
         } else if(isSlowMo) { isSlowMo = false; btn.classList.remove('lit'); btn.innerText = "未発見"; }
     }
 
@@ -102,13 +99,14 @@
             target.found = true; isSlowMo = false; player.isMoving = false;
             document.getElementById('find-btn').style.display = "none";
             document.getElementById('reset-btn').style.display = "block";
-            vibrate([500,100,500]);
+            document.getElementById('stick-btn').style.display = "none";
         }
     }
 
     function resetGame() {
         target.found = false; battery = 5; lastLog = null; isSlowMo = false; player.isMoving = false;
         document.getElementById('battery').innerText = `🔋 5/5`;
+        document.getElementById('stick-btn').style.display = "flex";
         document.getElementById('stick-btn').disabled = false;
         document.getElementById('find-btn').style.display = "block";
         document.getElementById('find-btn').innerText = "未発見";
@@ -126,15 +124,17 @@
         ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = 1/scale;
         for(let i=0; i<=WORLD_SIZE; i+=100) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke(); }
         
+        // 【修正】ステッキの線の太さと透明度を調整して見やすくした
         if(lastLog) {
             ctx.save(); ctx.translate(lastLog.x, lastLog.y); ctx.rotate(lastLog.angle);
-            ctx.strokeStyle = "rgba(0,160,233,0.5)"; ctx.lineWidth = 1/scale;
+            ctx.strokeStyle = "rgba(0,160,233,0.7)"; // 少し濃く
+            ctx.lineWidth = 4/scale; // 太く（以前は1/scale）
             ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(WORLD_SIZE*2,0); ctx.stroke(); ctx.restore();
         }
 
-        if(target.found || cheatMode) {
-            ctx.fillStyle = target.found ? "gold" : "rgba(237,28,36,0.6)";
-            ctx.beginPath(); ctx.arc(target.x, target.y, 4/scale, 0, 7); ctx.fill();
+        if(target.found || isSlowMo || cheatMode) {
+            ctx.fillStyle = target.found ? "gold" : "rgba(255, 0, 0, 0.8)";
+            ctx.beginPath(); ctx.arc(target.x, target.y, 5/scale, 0, 7); ctx.fill();
         }
 
         if (piconTimer > 0) {
@@ -150,28 +150,36 @@
         ctx.fillStyle = "#00A0E9"; ctx.beginPath(); ctx.arc(0,0,4/scale,0,7); ctx.fill(); ctx.strokeStyle="white"; ctx.lineWidth=2/scale; ctx.stroke();
         ctx.restore(); ctx.restore();
 
+        // 【修正】クリア画像のサイズを2割小さくし、配置を少し上に上げた
         if (target.found) {
-            ctx.fillStyle = "rgba(0,0,0,0.7)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = "rgba(0,0,0,0.85)"; ctx.fillRect(0,0,canvas.width,canvas.height);
             if (clearImage && clearImage.complete) {
-                const s = Math.min(canvas.width/clearImage.width, canvas.height/clearImage.height)*0.8;
+                // サイズを縮小（以前は*0.7、今回は*0.55に）
+                const s = Math.min(canvas.width/clearImage.width, canvas.height/clearImage.height)*0.55;
                 const iw = clearImage.width*s, ih = clearImage.height*s;
-                ctx.drawImage(clearImage, (canvas.width-iw)/2, (canvas.height-ih)/2, iw, ih);
+                // 配置を上げる（以前は-50、今回は-100に）
+                ctx.drawImage(clearImage, (canvas.width-iw)/2, (canvas.height-ih)/2 - 100, iw, ih);
             }
             ctx.fillStyle = "gold"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center";
-            ctx.fillText("2回のステッキ使用でほぼ100％の確率で見つけられる方法があるよ！", canvas.width/2, canvas.height*0.8);
-            ctx.fillText("考えてみよう！", canvas.width/2, canvas.height*0.8 + 30);
+            // テキストの配置は維持（画像が上がったので重ならないはず）
+            ctx.fillText("2回のステッキ使用でほぼ100％の確率で見つけられる方法があるよ！", canvas.width/2, canvas.height*0.75);
+            ctx.fillText("考えてみよう！", canvas.width/2, canvas.height*0.75 + 30);
         }
     }
 
     function normalizeAngle(a) { while(a < -Math.PI) a += Math.PI*2; while(a > Math.PI) a -= Math.PI*2; return a; }
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; scale = Math.min(canvas.width, canvas.height) / (WORLD_SIZE * 1.1); }
-    function vibrate(p) { if(navigator.vibrate) navigator.vibrate(p); }
+    
+    // トグル操作ロジックは維持
     canvas.addEventListener('pointerdown', (e) => {
         if(target.found || isSlowMo) return;
-        if(player.isMoving) player.isMoving = false;
-        else {
+        if(player.isMoving) {
+            player.isMoving = false;
+        } else {
             const r = canvas.getBoundingClientRect();
-            player.angle = Math.atan2((e.clientY-r.top-r.height/2)/scale + WORLD_SIZE/2 - player.y, (e.clientX-r.left-r.width/2)/scale + WORLD_SIZE/2 - player.x);
+            const tx = (e.clientX - r.left - r.width / 2) / scale + WORLD_SIZE / 2;
+            const ty = (e.clientY - r.top - r.height / 2) / scale + WORLD_SIZE / 2;
+            player.angle = Math.atan2(ty - player.y, tx - player.x);
             player.isMoving = true;
         }
     });
