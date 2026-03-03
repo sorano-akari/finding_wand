@@ -5,43 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>たずね人ステッキ・シミュレーター</title>
     <style>
-        /* 【修正：色使い】ドラえもんカラーを定義し、洗練された配色へ */
         :root { 
             --dora-blue: #00A0E9; /* ドラえもんブルー */
             --dora-red: #ED1C24;  /* 首輪レッド */
-            --dora-yellow: #FFEF00; /* 鈴ゴールド（洗練） */
-            --bg-dark: #121212;   /* より深いダークグレー */
-            --ui-dark: #1a1a1a;   /* UI要素用ダーク */
+            --bg-dark: #121212;   /* 背景：深い黒 */
+            --ui-dark: #1e1e1e;   /* UI：シックなダークグレー */
         }
         
         body { margin: 0; overflow: hidden; background: var(--bg-dark); font-family: sans-serif; touch-action: none; user-select: none; color: white; }
         canvas { display: block; }
         #ui { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; }
         
-        /* 【修正：トップバー】ダークグレーにしてシックな印象に。文字色は白 */
+        /* トップバー：シンプルかつ洗練されたダークデザイン */
         .top-bar { 
-            background: var(--ui-dark); 
+            background: #151515; 
             padding: 10px 20px; 
-            border-bottom: 4px solid var(--dora-blue); 
+            border-bottom: 3px solid var(--dora-blue); 
             color: white; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6); 
             display: flex; 
             justify-content: space-between; 
             align-items: center;
             pointer-events: auto;
         }
         
-        /* 【修正：カウンター】 Hitsバッジを削除し、テキスト表示に変更。色は洗練されたゴールド（ドラ鈴色） */
-        .counter-label {
-            background: var(--dora-yellow); /* ドラえもん鈴ゴールド */
-            color: black; /* 文字色は黒 */
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
+        /* カウンター：テキストとバッジを素直に並べる */
+        .visitor-box {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--dora-blue);
+        }
+
+        .visitor-box img {
+            height: 20px;
+            vertical-align: middle;
+            border-radius: 3px;
         }
         
         #guide-text { background: rgba(0,0,0,0.7); padding: 10px; font-size: 12px; text-align: center; line-height: 1.5; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -49,7 +50,7 @@
         .bottom-controls { margin-top: auto; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 15px; pointer-events: none; padding-bottom: 35px; }
         .btns-row { display: flex; gap: 12px; pointer-events: auto; }
         
-        /* 【修正：ボタン】サイズをPC対応に大型化 */
+        /* ボタン：PCでの操作性を重視した大型デザイン */
         .speed-btns, .acc-btns { display: flex; gap: 8px; background: rgba(255,255,255,0.1); padding: 8px; border-radius: 40px; }
         .speed-btns button, .acc-btns button { padding: 12px 24px; border: none; background: transparent; border-radius: 30px; font-size: 14px; color: #aaa; cursor: pointer; transition: 0.2s; }
         .speed-btns button.active, .acc-btns button.active { background: var(--dora-blue); color: white; font-weight: bold; }
@@ -69,13 +70,16 @@
 <canvas id="gameCanvas"></canvas>
 <div id="ui">
     <div class="top-bar">
-        <div class="counter-label">クリア: <span id="clear-count" style="font-size: 16px;">0</span>回</div>
-        <div style="font-weight: bold; font-size: 16px;">たずね人ステッキ</div>
-        <div class="counter-label">来訪者数: <span id="visitor-count" style="font-size: 16px;">0</span>人</div>
+        <div class="visitor-box">CLEAR: <span id="clear-count" style="color:white; font-size:16px;">0</span> 回</div>
+        <div style="font-weight: bold; font-size: 16px; letter-spacing: 1px;">たずね人ステッキ</div>
+        <div class="visitor-box">
+            アクセス件数: 
+            <img src="https://hits.dwyl.com/sorano-akari/finding_wand.svg?style=flat-square&color=00A0E9" alt="hits">
+        </div>
     </div>
     <div id="guide-text">
-        🎯 <b>遊び方：</b> タップで移動・停止。<b>速度(3段階)</b>や精度を状況に合わせて切り替えよう。<br>
-        🪄ステッキで方向を探索し、扇形にターゲットを捉えて<b>「発見！」ボタンが光ったら</b>クリア！
+        🎯 <b>遊び方：</b> タップで移動・停止。<b>速度(3段階)</b>や精度を切り替えよう。<br>
+        🪄ステッキで方向を探索。ターゲットを捉えて<b>「発見！」ボタンが光ったら</b>クリア！
     </div>
 
     <button id="cheat-btn" onclick="cheatMode = !cheatMode">答えを見る</button>
@@ -115,32 +119,8 @@
         target.x = Math.random() * WORLD_SIZE; target.y = Math.random() * WORLD_SIZE;
         player.angle = Math.random() * Math.PI * 2;
         piconTimer = 180;
-        clearImage = new Image(); clearImage.src = 'clear.png'; //
-        
-        // 初回起動時に来訪者数を取得
-        updateVisitorCount();
-        
+        clearImage = new Image(); clearImage.src = 'clear.png'; 
         if(!window.loopStarted) { requestAnimationFrame(loop); window.loopStarted = true; }
-    }
-
-async function updateVisitorCount() {
-        const vCountEl = document.getElementById('visitor-count');
-        try {
-            // academyのある方のドメインから、純粋な数字データを取得
-            const response = await fetch('https://sorano-akari-academy.goatcounter.com/counter//finding_wand.json');
-            if (!response.ok) throw new Error('Network response was not ok');
-            
-            const data = await response.json();
-            
-            // 数字だけを抽出し、HTML側で用意した「人」の前に流し込む
-            // カンマや空白などのノイズを徹底的に排除
-            const count = data.count.replace(/[^\d]/g, '');
-            vCountEl.innerText = count;
-        } catch (error) {
-            // 失敗時は変な数値（12+など）を書かず、エラー状態であることを明示
-            console.error('アクセスカウンター取得失敗:', error);
-            vCountEl.innerText = '---'; 
-        }
     }
 
     function setSpeed(s) { if(isSlowMo) return; currentSpeed = s; document.querySelectorAll('.speed-btns button').forEach(b => b.classList.remove('active')); document.getElementById('sp-'+s).classList.add('active'); }
@@ -158,7 +138,6 @@ async function updateVisitorCount() {
 
     function loop() {
         if(player.isMoving && !target.found) {
-            // 発見時のスロー速度を10.0に調整
             let s = isSlowMo ? 10.0 : currentSpeed;
             player.x += Math.cos(player.angle)*(s/60); player.y += Math.sin(player.angle)*(s/60);
             player.x = Math.max(0, Math.min(WORLD_SIZE, player.x));
@@ -183,8 +162,6 @@ async function updateVisitorCount() {
         if(isSlowMo) {
             target.found = true; isSlowMo = false; player.isMoving = false;
             totalClears++; document.getElementById('clear-count').innerText = totalClears;
-            // クリア時に来訪者数を再取得
-            updateVisitorCount(); 
             document.getElementById('find-btn').style.display = "none";
             document.getElementById('reset-btn').style.display = "block";
             document.getElementById('stick-btn').style.display = "none";
@@ -210,9 +187,11 @@ async function updateVisitorCount() {
         ctx.strokeStyle = "#444"; ctx.lineWidth = 2/scale; ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
         ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = 1/scale;
         for(let i=0; i<=WORLD_SIZE; i+=100) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke(); }
+        
+        // ステッキの線
         if(lastLog) {
             ctx.save(); ctx.translate(lastLog.x, lastLog.y); ctx.rotate(lastLog.angle);
-            ctx.strokeStyle = "rgba(0,160,233,0.7)"; ctx.lineWidth = 4/scale; // 線を太く
+            ctx.strokeStyle = "rgba(0,160,233,0.7)"; ctx.lineWidth = 4/scale;
             ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(WORLD_SIZE*2,0); ctx.stroke(); ctx.restore();
         }
         if(target.found || isSlowMo || cheatMode) {
@@ -231,27 +210,28 @@ async function updateVisitorCount() {
         ctx.fillStyle = "#00A0E9"; ctx.beginPath(); ctx.arc(0,0,4/scale,0,7); ctx.fill(); ctx.strokeStyle="white"; ctx.lineWidth=2/scale; ctx.stroke();
         ctx.restore(); ctx.restore();
 
+        // クリア画面
         if (target.found) {
             ctx.fillStyle = "rgba(0,0,0,0.85)"; ctx.fillRect(0,0,canvas.width,canvas.height);
             if (clearImage && clearImage.complete) {
                 const s = Math.min(canvas.width/clearImage.width, canvas.height/clearImage.height)*0.55; 
                 const iw = clearImage.width*s, ih = clearImage.height*s;
-                ctx.drawImage(clearImage, (canvas.width-iw)/2, (canvas.height-ih)/2 - 100, iw, ih); // 位置調整
+                ctx.drawImage(clearImage, (canvas.width-iw)/2, (canvas.height-ih)/2 - 100, iw, ih);
             }
             ctx.fillStyle = "gold"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center";
             ctx.fillText("2回のステッキ使用でほぼ100％の確率で見つけられる方法があるよ！", canvas.width/2, canvas.height*0.75);
-            ctx.fillText("考えてみよう！", canvas.width/2, canvas.height*0.75 + 30); // 重なり解消
+            ctx.fillText("考えてみよう！", canvas.width/2, canvas.height*0.75 + 30);
         }
     }
 
     function normalizeAngle(a) { while(a < -Math.PI) a += Math.PI*2; while(a > Math.PI) a -= Math.PI*2; return a; }
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; scale = Math.min(canvas.width, canvas.height) / (WORLD_SIZE * 1.1); }
     
-    // 【修正：操作ロジック】進行と停止のトグル移動
+    // トグル移動
     canvas.addEventListener('pointerdown', (e) => {
         if(target.found || isSlowMo) return;
         const r = canvas.getBoundingClientRect();
-        if(e.clientY < r.top + 110) return; // UIエリアの誤操作防止
+        if(e.clientY < r.top + 110) return; 
         
         if(player.isMoving) {
             player.isMoving = false;
