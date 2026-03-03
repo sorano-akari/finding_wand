@@ -123,24 +123,23 @@
         if(!window.loopStarted) { requestAnimationFrame(loop); window.loopStarted = true; }
     }
 
-    // 【追加：アクセスカウンター取得】 GoatCounterのAPIを利用してリアルタイムの来訪者数を取得
-    async function updateVisitorCount() {
+async function updateVisitorCount() {
+        const vCountEl = document.getElementById('visitor-count');
         try {
-            // ここにGoatCounterの読み取り専用トークンを設定する必要があります。
-            // GoatCounterダッシュボード -> 設定 -> APIトークン で生成できます。
-            const token = '***ここに読み取り専用トークンを入力***'; 
-            const response = await fetch('https://api.goatcounter.com/v0/stats/site_id/realtime', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            // academyのある方のドメインから、純粋な数字データを取得
+            const response = await fetch('https://sorano-akari-academy.goatcounter.com/counter//finding_wand.json');
+            if (!response.ok) throw new Error('Network response was not ok');
+            
             const data = await response.json();
-            // リアルタイムの訪問者数を取得して表示
-            document.getElementById('visitor-count').innerText = data.visits.count;
+            
+            // 数字だけを抽出し、HTML側で用意した「人」の前に流し込む
+            // カンマや空白などのノイズを徹底的に排除
+            const count = data.count.replace(/[^\d]/g, '');
+            vCountEl.innerText = count;
         } catch (error) {
-            console.error('アクセスカウンターの取得に失敗しました:', error);
-            // 失敗した場合は dwyl/hits のバッジを表示するなどのフォールバックを考えても良いが、今回はテキストで失敗を伝える
-            document.getElementById('visitor-count').innerText = '取得失敗';
+            // 失敗時は変な数値（12+など）を書かず、エラー状態であることを明示
+            console.error('アクセスカウンター取得失敗:', error);
+            vCountEl.innerText = '---'; 
         }
     }
 
