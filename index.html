@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>たずね人ステッキ・シミュレーター</title>
     <style>
         :root { 
@@ -12,9 +12,10 @@
             --ui-dark: #1e1e1e;
         }
         
+        /* 100dvh を使用してモバイルブラウザのツールバーに対応 */
         body { 
             margin: 0; 
-            height: 100vh;
+            height: 100dvh;
             display: flex;
             flex-direction: column;
             background: var(--bg-dark); 
@@ -29,9 +30,8 @@
 
         .top-bar { 
             background: #151515; 
-            padding: 8px 20px; 
-            border-bottom: 3px solid var(--dora-blue); 
-            color: white; 
+            padding: 8px 15px; 
+            border-bottom: 2px solid var(--dora-blue); 
             display: flex; 
             justify-content: space-between; 
             align-items: center;
@@ -40,104 +40,137 @@
         .visitor-box {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 13px;
+            gap: 8px;
+            font-size: 11px;
             font-weight: bold;
             color: var(--dora-blue);
         }
-        .visitor-box img { height: 20px; border-radius: 3px; }
+        .visitor-box img { height: 18px; border-radius: 2px; }
 
         #guide-text { 
             background: rgba(30, 30, 30, 0.9); 
-            padding: 6px; 
-            font-size: 11px; 
+            padding: 5px; 
+            font-size: 10px; 
             text-align: center; 
-            line-height: 1.4; 
+            line-height: 1.3; 
             border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* 【修正】ここがマップの表示領域 */
+        /* マップエリア：はみ出しを許容しない */
         main { 
             flex-grow: 1; 
             position: relative; 
             overflow: hidden; 
-            width: 100%;
+            background: #1a1a1a;
         }
-        canvas { display: block; width: 100%; height: 100%; }
+        canvas { display: block; }
 
-        #floating-ui { 
-            position: absolute; 
-            inset: 0; 
-            pointer-events: none; 
-            display: flex; 
-            flex-direction: column; 
+        /* 操作パネル：画面下部に固定（flexの要素として配置） */
+        footer {
+            flex-shrink: 0;
+            background: #151515;
+            padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+            border-top: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 20;
         }
 
-        .bottom-controls { 
-            margin-top: auto; 
-            padding: 15px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 10px; 
-            padding-bottom: 25px; 
-        }
-        .btns-row { display: flex; gap: 8px; pointer-events: auto; }
+        .btns-row { display: flex; gap: 6px; }
         
-        .speed-btns, .acc-btns { display: flex; gap: 4px; background: rgba(0,0,0,0.7); padding: 6px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.1); }
-        .speed-btns button, .acc-btns button { padding: 10px 18px; border: none; background: transparent; border-radius: 30px; font-size: 12px; color: #aaa; cursor: pointer; }
+        .speed-btns, .acc-btns { 
+            display: flex; 
+            gap: 3px; 
+            background: rgba(255,255,255,0.05); 
+            padding: 4px; 
+            border-radius: 30px; 
+        }
+        .speed-btns button, .acc-btns button { 
+            padding: 8px 14px; 
+            border: none; 
+            background: transparent; 
+            border-radius: 20px; 
+            font-size: 11px; 
+            color: #888; 
+            cursor: pointer; 
+        }
         .speed-btns button.active, .acc-btns button.active { background: var(--dora-blue); color: white; font-weight: bold; }
         .acc-btns button.active { background: var(--dora-red); }
 
-        #find-btn { width: 90%; max-width: 350px; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 40px; background: #333; color: #555; border: 2px solid #444; pointer-events: auto; }
-        #find-btn.lit { background: var(--dora-red); color: white; border: 2px solid white; box-shadow: 0 0 25px var(--dora-red); animation: glow 0.6s infinite alternate; }
+        #find-btn { 
+            width: 100%; 
+            max-width: 320px; 
+            padding: 12px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            border-radius: 30px; 
+            background: #333; 
+            color: #555; 
+            border: 1px solid #444; 
+        }
+        #find-btn.lit { background: var(--dora-red); color: white; border: 1px solid white; box-shadow: 0 0 20px var(--dora-red); animation: glow 0.6s infinite alternate; }
         
-        #stick-btn { width: 75px; height: 75px; border-radius: 50%; background: var(--dora-red); border: 4px solid white; color: white; font-weight: bold; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
-        #reset-btn { width: 90%; max-width: 350px; padding: 18px; font-size: 20px; font-weight: bold; border-radius: 40px; background: gold; color: black; border: 2px solid white; cursor: pointer; display: none; pointer-events: auto; }
+        #stick-btn { 
+            width: 65px; 
+            height: 65px; 
+            border-radius: 50%; 
+            background: var(--dora-red); 
+            border: 3px solid white; 
+            color: white; 
+            font-weight: bold; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+        }
+
+        #reset-btn { width: 100%; max-width: 320px; padding: 12px; font-size: 18px; font-weight: bold; border-radius: 30px; background: gold; color: black; border: 1px solid white; cursor: pointer; display: none; }
         
         @keyframes glow { from { opacity: 0.8; } to { opacity: 1; transform: scale(1.02); } }
-        #cheat-btn { position: absolute; top: 10px; right: 10px; font-size: 10px; color: #888; background: rgba(0,0,0,0.5); border: 1px solid #444; padding: 5px 10px; border-radius: 5px; cursor: pointer; pointer-events: auto; }
+        #cheat-btn { position: absolute; top: 10px; right: 10px; font-size: 9px; color: #666; background: rgba(0,0,0,0.3); border: 1px solid #333; padding: 4px 8px; border-radius: 4px; cursor: pointer; pointer-events: auto; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="top-bar">
-        <div class="visitor-box">CLEAR: <span id="clear-count" style="color:white; font-size:16px;">0</span> 回</div>
-        <div style="font-weight: bold; font-size: 15px; letter-spacing: 1px;">たずね人ステッキ</div>
+        <div class="visitor-box">CLEAR: <span id="clear-count" style="color:white;">0</span></div>
+        <div style="font-weight: bold; font-size: 14px; letter-spacing: 1px;">たずね人ステッキ</div>
         <div class="visitor-box">
-            アクセス件数: 
             <img src="https://hits.dwyl.com/sorano-akari/finding_wand.svg?style=flat-square&color=00A0E9" alt="hits">
         </div>
     </div>
     <div id="guide-text">
-        🎯 <b>遊び方：</b> タップで移動・停止。<b>速度</b>や精度を切り替えよう。ステッキで方向を探索！
+        🎯 マップをタップで移動・停止。ステッキで方向を探索！
     </div>
 </header>
 
 <main id="container">
     <canvas id="gameCanvas"></canvas>
-    <div id="floating-ui">
-        <button id="cheat-btn" onclick="cheatMode = !cheatMode">答えを見る</button>
-        <div class="bottom-controls">
-            <div class="btns-row">
-                <div class="speed-btns">
-                    <button id="sp-5" onclick="setSpeed(5)">🚶 5</button>
-                    <button id="sp-20" onclick="setSpeed(20)" class="active">🏃 20</button>
-                    <button id="sp-100" onclick="setSpeed(100)">🚀 100</button>
-                </div>
-                <div class="acc-btns">
-                    <button id="acc-70" onclick="setAccuracy(1.04, 70)" class="active">🎯 70%</button>
-                    <button id="acc-50" onclick="setAccuracy(0.67, 50)">⚖️ 50%</button>
-                    <button id="acc-20" onclick="setAccuracy(0.25, 20)">🎲 20%</button>
-                </div>
-            </div>
-            <button id="find-btn" onclick="attemptClear()">ターゲット未発見</button>
-            <button id="reset-btn" onclick="resetGame()">🌟 もう一度探す 🌟</button>
-            <button id="stick-btn" onclick="useStick()">🪄<span id="battery" style="font-size:12px">🔋 5/5</span></button>
+    <button id="cheat-btn" onclick="cheatMode = !cheatMode">答えを見る</button>
+</main>
+
+<footer>
+    <div class="btns-row">
+        <div class="speed-btns">
+            <button id="sp-5" onclick="setSpeed(5)">🚶 5</button>
+            <button id="sp-20" onclick="setSpeed(20)" class="active">🏃 20</button>
+            <button id="sp-100" onclick="setSpeed(100)">🚀 100</button>
+        </div>
+        <div class="acc-btns">
+            <button id="acc-70" onclick="setAccuracy(1.04, 70)" class="active">🎯 70%</button>
+            <button id="acc-50" onclick="setAccuracy(0.67, 50)">⚖️ 50%</button>
+            <button id="acc-20" onclick="setAccuracy(0.25, 20)">🎲 20%</button>
         </div>
     </div>
-</main>
+    <button id="find-btn" onclick="attemptClear()">ターゲット未発見</button>
+    <button id="reset-btn" onclick="resetGame()">🌟 もう一度探す 🌟</button>
+    <button id="stick-btn" onclick="useStick()">🪄<span id="battery" style="font-size:10px">🔋 5/5</span></button>
+</footer>
 
 <script data-goatcounter="https://sorano-akari-academy.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
@@ -152,16 +185,13 @@
     let precisionZ = 1.04;
 
     function init() {
-        // 【重要】ブラウザの描画準備が整ってからリサイズを実行
-        requestAnimationFrame(() => {
-            resize();
-            player.x = Math.random() * WORLD_SIZE; player.y = Math.random() * WORLD_SIZE;
-            target.x = Math.random() * WORLD_SIZE; target.y = Math.random() * WORLD_SIZE;
-            player.angle = Math.random() * Math.PI * 2;
-            piconTimer = 180;
-            clearImage = new Image(); clearImage.src = 'clear.png'; 
-            if(!window.loopStarted) { requestAnimationFrame(loop); window.loopStarted = true; }
-        });
+        resize();
+        player.x = Math.random() * WORLD_SIZE; player.y = Math.random() * WORLD_SIZE;
+        target.x = Math.random() * WORLD_SIZE; target.y = Math.random() * WORLD_SIZE;
+        player.angle = Math.random() * Math.PI * 2;
+        piconTimer = 180;
+        clearImage = new Image(); clearImage.src = 'clear.png'; 
+        if(!window.loopStarted) { requestAnimationFrame(loop); window.loopStarted = true; }
     }
 
     function setSpeed(s) { if(isSlowMo) return; currentSpeed = s; document.querySelectorAll('.speed-btns button').forEach(b => b.classList.remove('active')); document.getElementById('sp-'+s).classList.add('active'); }
@@ -206,7 +236,6 @@
             document.getElementById('find-btn').style.display = "none";
             document.getElementById('reset-btn').style.display = "block";
             document.getElementById('stick-btn').style.display = "none";
-            document.getElementById('guide-text').style.display = "none";
         }
     }
 
@@ -217,18 +246,23 @@
         document.getElementById('find-btn').style.display = "block"; document.getElementById('find-btn').innerText = "ターゲット未発見";
         document.getElementById('find-btn').classList.remove('lit');
         document.getElementById('reset-btn').style.display = "none";
-        document.getElementById('guide-text').style.display = "block";
         init();
     }
 
     function draw() {
         ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.save();
-        ctx.translate(canvas.width/2, canvas.height/2); ctx.scale(scale, scale); ctx.translate(-WORLD_SIZE/2, -WORLD_SIZE/2);
+        // マップの中央配置
+        ctx.translate(canvas.width/2, canvas.height/2); 
+        ctx.scale(scale, scale); 
+        ctx.translate(-WORLD_SIZE/2, -WORLD_SIZE/2);
         
         ctx.strokeStyle = "#444"; ctx.lineWidth = 2/scale; ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
         ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = 1/scale;
-        for(let i=0; i<=WORLD_SIZE; i+=100) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke(); }
+        for(let i=0; i<=WORLD_SIZE; i+=100) { 
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke(); 
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke(); 
+        }
         
         if(lastLog) {
             ctx.save(); ctx.translate(lastLog.x, lastLog.y); ctx.rotate(lastLog.angle);
@@ -254,23 +288,24 @@
         if (target.found) {
             ctx.fillStyle = "rgba(0,0,0,0.85)"; ctx.fillRect(0,0,canvas.width,canvas.height);
             if (clearImage && clearImage.complete) {
-                const s = Math.min(canvas.width/clearImage.width, canvas.height/clearImage.height)*0.55; 
+                const s = Math.min(canvas.width/clearImage.width, canvas.height/clearImage.height)*0.5; 
                 const iw = clearImage.width*s, ih = clearImage.height*s;
-                ctx.drawImage(clearImage, (canvas.width-iw)/2, (canvas.height-ih)/2 - 100, iw, ih);
+                ctx.drawImage(clearImage, (canvas.width-iw)/2, (canvas.height-ih)/2 - 80, iw, ih); 
             }
-            ctx.fillStyle = "gold"; ctx.font = "bold 18px sans-serif"; ctx.textAlign = "center";
-            ctx.fillText("2回のステッキ使用でほぼ100％の確率で見つけられる方法があるよ！", canvas.width/2, canvas.height*0.75);
-            ctx.fillText("考えてみよう！", canvas.width/2, canvas.height*0.75 + 30);
+            ctx.fillStyle = "gold"; ctx.font = "bold 16px sans-serif"; ctx.textAlign = "center";
+            ctx.fillText("2回のステッキ使用でほぼ100％の確率で見つけられる方法があるよ！", canvas.width/2, canvas.height*0.8);
+            ctx.fillText("考えてみよう！", canvas.width/2, canvas.height*0.8 + 25);
         }
     }
 
     function normalizeAngle(a) { while(a < -Math.PI) a += Math.PI*2; while(a > Math.PI) a -= Math.PI*2; return a; }
     
-    // 【修正】余白を多めに(1.2)とり、PCでも確実に収まるように
     function resize() { 
+        // コンテナのサイズに厳密に合わせる
         canvas.width = container.clientWidth; 
         canvas.height = container.clientHeight; 
-        scale = Math.min(canvas.width, canvas.height) / (WORLD_SIZE * 1.2); 
+        // 歪みを防ぐため、最小辺を基準にスケールを決定（1.3倍の余白）
+        scale = Math.min(canvas.width, canvas.height) / (WORLD_SIZE * 1.3); 
     }
     
     canvas.addEventListener('pointerdown', (e) => {
