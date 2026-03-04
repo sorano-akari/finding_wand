@@ -9,143 +9,98 @@
             --dora-blue: #00A0E9;
             --dora-red: #ED1C24;
             --bg-dark: #121212;
-            --ui-dark: #1e1e1e;
+            --ui-dark: #1a1a1a;
         }
         
-        /* 100dvh を使用してモバイルブラウザのツールバーに対応 */
+        /* 画面全体を3段（ヘッダー・マップ・フッター）に分割 */
         body { 
             margin: 0; 
-            height: 100dvh;
+            height: 100dvh; /* iPadのツールバー変化に対応 */
             display: flex;
             flex-direction: column;
             background: var(--bg-dark); 
             font-family: sans-serif; 
-            touch-action: none; 
-            user-select: none; 
             color: white; 
             overflow: hidden;
         }
 
-        header { flex-shrink: 0; z-index: 10; }
-
+        /* 1段目：ヘッダー（固定） */
+        header { flex-shrink: 0; z-index: 10; border-bottom: 2px solid var(--dora-blue); }
         .top-bar { 
-            background: #151515; 
-            padding: 8px 15px; 
-            border-bottom: 2px solid var(--dora-blue); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
+            background: #151515; padding: 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        
-        .visitor-box {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 11px;
-            font-weight: bold;
-            color: var(--dora-blue);
-        }
+        .visitor-box { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: bold; color: var(--dora-blue); }
         .visitor-box img { height: 18px; border-radius: 2px; }
-
         #guide-text { 
-            background: rgba(30, 30, 30, 0.9); 
-            padding: 5px; 
-            font-size: 10px; 
-            text-align: center; 
-            line-height: 1.3; 
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: #222; padding: 6px; font-size: 10px; text-align: center; 
+            line-height: 1.3; color: #ccc; border-top: 1px solid #333;
         }
 
-        /* マップエリア：はみ出しを許容しない */
+        /* 2段目：マップ（可変・重なりなし） */
         main { 
-            flex-grow: 1; 
+            flex: 1; /* 余ったスペースをすべて使う */
             position: relative; 
             overflow: hidden; 
-            background: #1a1a1a;
+            background: #151515;
         }
-        canvas { display: block; }
+        canvas { display: block; width: 100%; height: 100%; }
 
-        /* 操作パネル：画面下部に固定（flexの要素として配置） */
+        /* 3段目：操作パネル（固定・画面下部に強制配置） */
         footer {
             flex-shrink: 0;
-            background: #151515;
-            padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+            background: #1a1a1a;
+            padding: 15px 10px calc(15px + env(safe-area-inset-bottom));
             border-top: 1px solid #333;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            z-index: 20;
+            gap: 12px;
         }
 
-        .btns-row { display: flex; gap: 6px; }
-        
+        .btns-row { display: flex; gap: 8px; }
         .speed-btns, .acc-btns { 
-            display: flex; 
-            gap: 3px; 
-            background: rgba(255,255,255,0.05); 
-            padding: 4px; 
-            border-radius: 30px; 
+            display: flex; gap: 4px; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 30px; 
         }
         .speed-btns button, .acc-btns button { 
-            padding: 8px 14px; 
-            border: none; 
-            background: transparent; 
-            border-radius: 20px; 
-            font-size: 11px; 
-            color: #888; 
-            cursor: pointer; 
+            padding: 8px 14px; border: none; background: transparent; border-radius: 20px; 
+            font-size: 12px; color: #888; cursor: pointer; 
         }
         .speed-btns button.active, .acc-btns button.active { background: var(--dora-blue); color: white; font-weight: bold; }
         .acc-btns button.active { background: var(--dora-red); }
 
         #find-btn { 
-            width: 100%; 
-            max-width: 320px; 
-            padding: 12px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            border-radius: 30px; 
-            background: #333; 
-            color: #555; 
-            border: 1px solid #444; 
+            width: 90%; max-width: 320px; padding: 14px; font-size: 18px; font-weight: bold; 
+            border-radius: 30px; background: #333; color: #555; border: 1px solid #444; 
         }
         #find-btn.lit { background: var(--dora-red); color: white; border: 1px solid white; box-shadow: 0 0 20px var(--dora-red); animation: glow 0.6s infinite alternate; }
         
         #stick-btn { 
-            width: 65px; 
-            height: 65px; 
-            border-radius: 50%; 
-            background: var(--dora-red); 
-            border: 3px solid white; 
-            color: white; 
-            font-weight: bold; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+            width: 70px; height: 70px; border-radius: 50%; background: var(--dora-red); 
+            border: 4px solid white; color: white; font-weight: bold; display: flex; 
+            flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
-        #reset-btn { width: 100%; max-width: 320px; padding: 12px; font-size: 18px; font-weight: bold; border-radius: 30px; background: gold; color: black; border: 1px solid white; cursor: pointer; display: none; }
+        #reset-btn { width: 90%; max-width: 320px; padding: 14px; font-size: 20px; font-weight: bold; border-radius: 30px; background: gold; color: black; border: 1px solid white; cursor: pointer; display: none; }
         
         @keyframes glow { from { opacity: 0.8; } to { opacity: 1; transform: scale(1.02); } }
-        #cheat-btn { position: absolute; top: 10px; right: 10px; font-size: 9px; color: #666; background: rgba(0,0,0,0.3); border: 1px solid #333; padding: 4px 8px; border-radius: 4px; cursor: pointer; pointer-events: auto; }
+        #cheat-btn { position: absolute; top: 10px; right: 10px; font-size: 10px; color: #888; background: rgba(0,0,0,0.4); border: 1px solid #444; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <header>
     <div class="top-bar">
-        <div class="visitor-box">CLEAR: <span id="clear-count" style="color:white;">0</span></div>
-        <div style="font-weight: bold; font-size: 14px; letter-spacing: 1px;">たずね人ステッキ</div>
+        <div class="visitor-box">CLEAR: <span id="clear-count" style="color:white; font-size:14px;">0</span></div>
+        <div style="font-weight: bold; font-size: 15px; letter-spacing: 1px;">たずね人ステッキ</div>
         <div class="visitor-box">
+            アクセス件数: 
             <img src="https://hits.dwyl.com/sorano-akari/finding_wand.svg?style=flat-square&color=00A0E9" alt="hits">
         </div>
     </div>
     <div id="guide-text">
-        🎯 マップをタップで移動・停止。ステッキで方向を探索！
+        🎯 画面をタップで移動・停止。ステッキで方向を探索してください。
     </div>
 </header>
 
@@ -252,18 +207,13 @@
     function draw() {
         ctx.fillStyle = "#1a1a1a"; ctx.fillRect(0,0,canvas.width,canvas.height);
         ctx.save();
-        // マップの中央配置
-        ctx.translate(canvas.width/2, canvas.height/2); 
-        ctx.scale(scale, scale); 
-        ctx.translate(-WORLD_SIZE/2, -WORLD_SIZE/2);
-        
+        ctx.translate(canvas.width/2, canvas.height/2); ctx.scale(scale, scale); ctx.translate(-WORLD_SIZE/2, -WORLD_SIZE/2);
         ctx.strokeStyle = "#444"; ctx.lineWidth = 2/scale; ctx.strokeRect(0, 0, WORLD_SIZE, WORLD_SIZE);
         ctx.strokeStyle = "#2a2a2a"; ctx.lineWidth = 1/scale;
         for(let i=0; i<=WORLD_SIZE; i+=100) { 
             ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_SIZE); ctx.stroke(); 
             ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_SIZE, i); ctx.stroke(); 
         }
-        
         if(lastLog) {
             ctx.save(); ctx.translate(lastLog.x, lastLog.y); ctx.rotate(lastLog.angle);
             ctx.strokeStyle = "rgba(0,160,233,0.7)"; ctx.lineWidth = 4/scale;
@@ -301,11 +251,9 @@
     function normalizeAngle(a) { while(a < -Math.PI) a += Math.PI*2; while(a > Math.PI) a -= Math.PI*2; return a; }
     
     function resize() { 
-        // コンテナのサイズに厳密に合わせる
         canvas.width = container.clientWidth; 
         canvas.height = container.clientHeight; 
-        // 歪みを防ぐため、最小辺を基準にスケールを決定（1.3倍の余白）
-        scale = Math.min(canvas.width, canvas.height) / (WORLD_SIZE * 1.3); 
+        scale = Math.min(canvas.width, canvas.height) / (WORLD_SIZE * 1.4); 
     }
     
     canvas.addEventListener('pointerdown', (e) => {
