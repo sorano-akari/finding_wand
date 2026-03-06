@@ -32,10 +32,11 @@
         .visitor-box img { height: 18px; border-radius: 2px; }
 
         #guide-text { 
-            background: #222; padding: 12px; font-size: 12px; text-align: center; 
+            background: #222; padding: 12px; font-size: 11px; text-align: left; 
             line-height: 1.6; color: #eee; border-top: 1px solid #333;
         }
-        .mission-text { font-size: 14px; font-weight: bold; display: block; margin-bottom: 4px; color: #fff; }
+        .guide-inner { max-width: 500px; margin: 0 auto; }
+        .mission-text { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #fff; text-align: center; }
         .highlight-blue { color: var(--dora-blue); font-weight: bold; }
         .highlight-red { color: #ff6b6b; font-weight: bold; }
 
@@ -85,7 +86,7 @@
         .acc-btns button.active { background: var(--dora-red); }
 
         #find-btn { 
-            width: 90%; max-width: 320px; padding: 14px; font-size: 18px; font-weight: bold; 
+            width: 90%; max-width: 320px; padding: 14px; font-size: 16px; font-weight: bold; 
             border-radius: 30px; background: #333; color: #555; border: 1px solid #444; 
         }
         #find-btn.lit { background: var(--dora-red); color: white; border: 1px solid white; box-shadow: 0 0 20px var(--dora-red); animation: glow 0.6s infinite alternate; }
@@ -114,9 +115,13 @@
         </div>
     </div>
     <div id="guide-text">
-        <span class="mission-text">🎯 見えない「たずね人」を探し出そう！</span>
-        🪄 ステッキを上手に使って、<span class="highlight-blue">なるべく少ない回数</span>でたずね人を見つけよう！<br>
-        ステッキが指した方向にまっすぐ進むと、確率でターゲットが見つかるよ。
+        <div class="guide-inner">
+            <span class="mission-text">🎯 目標：『わたし（ちびあかり）』を探し出そう！</span>
+            🔵 <span class="highlight-blue">あなた</span>：青い点。タップで移動・停止します。<br>
+            📐 <span class="highlight-blue">扇形の円弧</span>：あなたの<span class="highlight-blue">視野</span>です。この中にターゲットを捉えてください。<br>
+            🪄 <span class="highlight-red">ステッキ</span>：使うとターゲットのいる方向を線分で示します。<br>
+            🏁 <span class="highlight-blue">クリア</span>：視野でターゲットを捉え、「発見！」ボタンが光ったら押してください。
+        </div>
     </div>
 </header>
 
@@ -249,6 +254,11 @@
         ctx.fillStyle = isSlowMo ? "rgba(255,239,0,0.6)" : "rgba(255,255,255,0.2)";
         ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,VIEW_RADIUS,-VIEW_ANGLE,VIEW_ANGLE); ctx.fill();
         ctx.fillStyle = "#00A0E9"; ctx.beginPath(); ctx.arc(0,0,4/scale,0,7); ctx.fill(); ctx.strokeStyle="white"; ctx.lineWidth=2/scale; ctx.stroke();
+        
+        ctx.rotate(-player.angle);
+        ctx.fillStyle = "white"; ctx.font = `bold ${11/scale}px sans-serif`; ctx.textAlign = "center";
+        ctx.fillText("あなた", 0, 22/scale);
+        
         ctx.restore(); ctx.restore();
 
         if (target.found) {
@@ -259,8 +269,6 @@
                 ctx.drawImage(clearImage, (canvas.width-iw)/2, (canvas.height-ih)/2 - 80, iw, ih); 
             }
             ctx.fillStyle = "gold"; ctx.font = "bold 16px sans-serif"; ctx.textAlign = "center";
-            
-            // 【修正】クリア回数に応じてメッセージを分岐
             if (totalClears === 1) {
                 ctx.fillText("2回のステッキ使用でほぼ100％の確率で見つけられる方法があるよ！", canvas.width/2, canvas.height*0.8);
                 ctx.fillText("考えてみよう！", canvas.width/2, canvas.height*0.8 + 25);
